@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CPU Scheduling Simulator — Interactive</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Dancing+Script:wght@400..700&family=Libertinus+Keyboard&display=swap');
+
+        :root {
+            --lav: url('back.jpeg');
+            --card: #c0c6ac88;
+            --muted: #000000;
+            --accent: #394923;
+        }
+
+        h3 {
+            color: #4a5937;
+        }
+
+        .headtitle {
+            font-family: 'Cinzel', serif;
+            color: #ffffff;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            padding: 22px;
+            font-family: 'Times New Roman', Times, serif;
+            background: var(--lav);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: #0f172a;
+        }
+
+        h1 {
+            margin: 0 0 12px 0;
+            text-align: center;
+            font-size: 28px
+        }
+
+        .wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 18px
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 6px 20px rgba(2, 6, 23, 0.06)
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: 600
+        }
+
+        input[type='number'],
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            margin-top: 6px;
+            font-family: 'Times New Roman', Times, serif
+        }
+
+        button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-weight: 700
+        }
+
+        button.ghost {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent)
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            overflow-x: auto;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #e6e9ef;
+            text-align: center;
+            font-size: 14px
+        }
+
+        th {
+            background: #f3f4f6
+        }
+
+        .gantt-wrap {
+            margin-top: 12px
+        }
+
+        .gantt {
+            display: flex;
+            height: 48px;
+            border-radius: 8px;
+            overflow: hidden;
+            align-items: stretch
+        }
+
+        .block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            padding: 6px 4px
+        }
+
+        .idle {
+            background: #9ca3af;
+            color: #082032;
+            font-weight: 700
+        }
+
+        .marker-row {
+            display: flex;
+            margin-top: 6px;
+            font-size: 13px
+        }
+
+        .marker {
+            padding: 4px 6px;
+            box-sizing: border-box;
+            text-align: left
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px
+        }
+
+        .steps-area {
+            margin-top: 12px;
+            max-height: 260px;
+            overflow: auto;
+            padding-right: 6px
+        }
+
+        .step {
+            padding: 8px;
+            border-radius: 8px;
+            background: #fbfbff;
+            margin-bottom: 8px;
+            border: 1px dashed #e5e7eb
+        }
+
+        .colors-legend {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .color-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px
+        }
+
+        .right-panel h3 {
+            margin: 0
+        }
+
+        .small {
+            font-size: 1324pxpx;
+            color: var(--muted)
+        }
+
+        .summary {
+            margin-top: 12px
+        }
+
+        .final-table {
+            margin-top: 8px
+        }
+
+        .footer {
+            margin-top: 16px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        /* responsive */
+        @media (max-width:980px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .right-panel {
+                order: 2
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1 class="headtitle">CPU Scheduling Simulator — Interactive</h1>
+
+        <div class="grid">
+            <div class="card">
+                <label>Number of processes</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input id="numProc" type="number" min="1" max="12" value="3" />
+                    <button onclick="generateTable()">Generate</button>
+                    <button class="ghost" onclick="addProcessRow()">+ Add Row</button>
+                </div>
+
+                <div id="procTable" style="margin-top:12px"></div>
+
+                <label>Choose algorithm</label>
+                <select id="algorithm">
+                    <option value="fcfs">FCFS (First-Come First-Serve)</option>
+                    <option value="sjf">SJF (Shortest Job First) — Non-preemptive</option>
+                    <option value="priority">Priority Scheduling — Non-preemptive</option>
+                    <option value="rr">Round Robin (Preemptive) — Single Quantum</option>
+                    <option value="wcrr">Wait-Compensated RR (Preemptive) — Per-Process Quantum</option>
+                </select>
+
+                <div id="quantumDiv" style="display:none">
+                    <label>Time Quantum (Used by 'Round Robin - Single Quantum')</label>
+                    <input id="quantum" type="number" min="1" value="2" />
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+                    <button onclick="prepareAndRun()">Run Simulation</button>
+                    <button class="ghost" onclick="resetAll()">Reset</button>
+                    <div style="margin-left:auto;font-size:13px;color:var(--muted)"></div>
+                </div>
+
+                <div class="summary">
+                    <h3>Step Controls</h3>
+                    <div class="controls">
+                        <button onclick="prevStep()">◀ Prev</button>
+                        <button id="playBtn" onclick="togglePlay()">▶ Play</button>
+                        <button onclick="nextStep()">Next ▶</button>
+                        <button onclick="jumpToEnd()">⏭ End</button>
+                        <button class="ghost" onclick="showAllCalculations()">Show Full Calculations</button>
+                    </div>
+
+                    <div class="steps-area" id="stepsArea">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card right-panel">
+                <h3>Gantt & Timeline</h3>
+                <div id="ganttZone" class="gantt-wrap">
+                    <div id="ganttChart" class="gantt"></div>
+                    <div id="markerRow" class="marker-row"></div>
+                    <div id="endMarker" style="margin-top:6px;color:var(--muted);font-weight:700"></div>
+                </div>
+
+                <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+                    <div>
+                        <div class="small">Legend</div>
+                        <div class="colors-legend" id="legend"></div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="small">Current step:</div>
+                        <div id="currentStepLabel">0 / 0</div>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <h3>Per-step Details</h3>
+                    <div id="stepDetail" class="small"></div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <h3>Processes (live)</h3>
+                    <div id="processTableLive"></div>
+                </div>
+
+                <div style="margin-top:10px">
+                    <h3>Final Results</h3>
+                    <div id="resultTableFinal" class="final-table"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="footer"></div>
+    </div>
+
+    <script>
+        // helper colors
+        const COLORS = ["#4cafef", "#f97316", "#10b981", "#ef4444", "#a78bfa", "#f59e0b", "#06b6d4", "#ec4899", "#7c3aed", "#06b6d4"];
+
+        // state
+        let events = []; // sequence of execution events
+        let processes = []; // input processes
+        let stepIndex = -1;
+        let playTimer = null;
+
+        function generateTable() {
+            const n = Math.max(1, Math.min(12, parseInt(document.getElementById('numProc').value) || 1));
+            document.getElementById('numProc').value = n;
+            // UPDATED: Added Time Quantum (QTM) column
+            let html = `<table><thead><tr><th>Process</th><th>Arrival Time</th><th>Burst Time</th><th>Priority</th><th>Time Quantum</th><th></th></tr></thead><tbody>`;
+            for (let i = 1; i <= n; i++) {
+                html += `<tr id='row${i}'>
+        <td>P${i}</td>
+        <td><input type='number' id='at${i}' value='${i === 1 ? 0 : 1}' min='0'></td>
+        <td><input type='number' id='bt${i}' value='${i === 1 ? 5 : Math.max(1, 2)}' min='1'></td>
+        <td><input type='number' id='pr${i}' value='${i}' min='0'></td>
+        <td><input type='number' id='qtm${i}' value='3' min='1'></td>
+        <td><button class='ghost' onclick='removeRow(${i})'>Remove</button></td>
+      </tr>`;
+            }
+            html += `</tbody></table>`;
+            document.getElementById('procTable').innerHTML = html;
+        }
+
+        function addProcessRow() {
+            const table = document.querySelector('#procTable tbody');
+            if (!table) { alert('Generate the table first'); return }
+            const rows = table.querySelectorAll('tr').length;
+            const i = rows + 1;
+            const tr = document.createElement('tr'); tr.id = 'row' + i;
+            // UPDATED: Added Time Quantum (QTM) input
+            tr.innerHTML = `<td>P${i}</td><td><input type='number' id='at${i}' value='0' min='0'></td><td><input type='number' id='bt${i}' value='1' min='1'></td><td><input type='number' id='pr${i}' value='1' min='0'></td><td><input type='number' id='qtm${i}' value='3' min='1'></td><td><button class='ghost' onclick='removeRow(${i})'>Remove</button></td>`;
+            table.appendChild(tr);
+            document.getElementById('numProc').value = i;
+        }
+
+        function removeRow(i) {
+            const row = document.getElementById('row' + i); if (row) row.remove();
+        }
+
+        document.getElementById('algorithm').addEventListener('change', function () {
+            // Quantum input visible for both RR and WCRR
+            document.getElementById('quantumDiv').style.display = (this.value === 'rr' || this.value === 'wcrr') ? 'block' : 'none';
+        });
+
+        function collectProcesses() {
+            const rows = document.querySelectorAll('#procTable tbody tr');
+            const arr = [];
+            rows.forEach((r, idx) => {
+                const pid = r.children[0].innerText.trim();
+                const at = parseInt(r.querySelector(`#at${idx + 1}`).value) || 0;
+                const bt = parseInt(r.querySelector(`#bt${idx + 1}`).value) || 1;
+                const pr = parseInt(r.querySelector(`#pr${idx + 1}`).value) || 0;
+                // NEW: Collect Time Quantum (QTM)
+                const qtm = parseInt(r.querySelector(`#qtm${idx + 1}`).value) || 1;
+
+                arr.push({ id: pid, at: at, bt: bt, pr: pr, qtm: qtm, color: COLORS[idx % COLORS.length], index: idx });
+            });
+            return arr;
+        }
+
+        // --- Event generation algorithms ---
+        function generateEventsFCFS(procs) {
+            let list = procs.slice().sort((a, b) => a.at - b.at || a.index - b.index);
+            let time = 0; const ev = [];
+            for (const p of list) {
+                if (time < p.at) {
+                    ev.push({ pid: 'IDLE', start: time, duration: p.at - time, explain: `CPU is idle until ${p.id} arrives at ${p.at}.` });
+                    time = p.at;
+                }
+                ev.push({ pid: p.id, pidx: p.index, start: time, duration: p.bt, explain: `${p.id} starts at ${time} and runs for ${p.bt} units. CT = ${time + p.bt}. WT = start - AT = ${time} - ${p.at} = ${Math.max(0, time - p.at)}.` });
+                time += p.bt;
+            }
+            return ev;
+        }
+
+        function generateEventsSJF(procs) {
+            const n = procs.length;
+            const done = Array(n).fill(false);
+            let time = 0, completed = 0; const ev = [];
+            // ensure we use min arrival as starting point if nothing at 0
+            const minAt = Math.min(...procs.map(p => p.at));
+            time = Math.max(0, minAt);
+            while (completed < n) {
+                let candidates = procs.map((p, i) => ({ p, i })).filter(x => !done[x.i] && x.p.at <= time);
+                if (candidates.length === 0) {
+                    // idle until next arrival
+                    const nextAt = Math.min(...procs.filter((_, i) => !done[i]).map(p => p.at));
+                    ev.push({ pid: 'IDLE', start: time, duration: nextAt - time, explain: `CPU idle until next arrival at ${nextAt}.` });
+                    time = nextAt;
+                    continue;
+                }
+                candidates.sort((a, b) => a.p.bt - b.p.bt || a.p.at - b.p.at);
+                const chosen = candidates[0].p;
+                const idx = candidates[0].i;
+                ev.push({ pid: chosen.id, pidx: idx, start: time, duration: chosen.bt, explain: `SJF selects ${chosen.id} (BT=${chosen.bt}) at time ${time}. It runs to completion. CT=${time + chosen.bt}. WT = start - AT = ${time} - ${chosen.at}.` });
+                time += chosen.bt; done[idx] = true; completed++;
+            }
+            return ev;
+        }
+
+        function generateEventsPriority(procs) {
+            const n = procs.length; const done = Array(n).fill(false); let time = 0, completed = 0; const ev = [];
+            const minAt = Math.min(...procs.map(p => p.at)); time = Math.max(0, minAt);
+            while (completed < n) {
+                let candidates = procs.map((p, i) => ({ p, i })).filter(x => !done[x.i] && x.p.at <= time);
+                if (candidates.length === 0) {
+                    const nextAt = Math.min(...procs.filter((_, i) => !done[i]).map(p => p.at));
+                    ev.push({ pid: 'IDLE', start: time, duration: nextAt - time, explain: `CPU idle until next arrival at ${nextAt}.` });
+                    time = nextAt; continue;
+                }
+                // choose highest numeric priority value
+                candidates.sort((a, b) => b.p.pr - a.p.pr || a.p.at - b.p.at);
+                const chosen = candidates[0].p; const idx = candidates[0].i;
+                ev.push({ pid: chosen.id, pidx: idx, start: time, duration: chosen.bt, explain: `Priority picks ${chosen.id} (PR=${chosen.pr}) at ${time}. Runs to completion. CT=${time + chosen.bt}. WT = start - AT = ${time} - ${chosen.at}.` });
+                time += chosen.bt; done[idx] = true; completed++;
+            }
+            return ev;
+        }
+
+        function generateEventsRR(procs, quantum) {
+            const n = procs.length; const rem = procs.map(p => p.bt); const ev = [];
+            let time = Math.min(...procs.map(p => p.at)); // start at earliest arrival
+            const completed = Array(n).fill(false); let doneCount = 0;
+            const queue = [];
+            const arrived = Array(n).fill(false);
+            // enqueue initial arrivals at start time
+            procs.forEach((p, i) => { if (p.at <= time) { queue.push(i); arrived[i] = true; } });
+            while (doneCount < n) {
+                if (queue.length === 0) {
+                    // fast-forward to next arrival
+                    const nextAt = Math.min(...procs.filter((_, i) => !arrived[i]).map(p => p.at));
+                    if (isFinite(nextAt)) {
+                        ev.push({ pid: 'IDLE', start: time, duration: nextAt - time, explain: `CPU idle until next arrival at ${nextAt}.` });
+                        time = nextAt;
+                        procs.forEach((p, i) => { if (p.at <= time && !arrived[i]) { queue.push(i); arrived[i] = true; } });
+                        continue;
+                    } else break;
+                }
+                const idx = queue.shift();
+                if (rem[idx] <= 0) continue;
+                const run = Math.min(quantum, rem[idx]);
+                ev.push({ pid: procs[idx].id, pidx: idx, start: time, duration: run, explain: `RR: ${procs[idx].id} runs for ${run} (remaining before slice ${rem[idx]}). Starts at ${time}, ends at ${time + run}.` });
+                time += run; rem[idx] -= run;
+                // add newly arrived processes into queue
+                procs.forEach((p, i) => { if (!arrived[i] && p.at <= time) { queue.push(i); arrived[i] = true; } });
+                if (rem[idx] > 0) { queue.push(idx); } else { completed[idx] = true; doneCount++; }
+            }
+            return ev;
+        }
+
+        // NEW: Wait-Compensated Round Robin (WCRR) Algorithm
+        function generateEventsWCRR(procs) {
+            const n = procs.length;
+            const rem = procs.map(p => p.bt); // Remaining burst time
+            const ev = [];
+            let time = Math.min(...procs.map(p => p.at)); // Current time, start at earliest arrival
+            const completed = Array(n).fill(false);
+            let doneCount = 0;
+            const queue = [];
+            const arrived = Array(n).fill(false);
+            // Tracks the time a process was last added to the ready queue (either arrival or preemption)
+            const lastReadyTime = Array(n).fill(-1);
+
+            // Enqueue initial arrivals at start time
+            procs.forEach((p, i) => {
+                if (p.at <= time) {
+                    queue.push(i);
+                    arrived[i] = true;
+                    lastReadyTime[i] = p.at;
+                }
+            });
+
+            while (doneCount < n) {
+                if (queue.length === 0) {
+                    // Fast-forward to next arrival
+                    const nextAt = Math.min(...procs.filter((_, i) => !arrived[i]).map(p => p.at));
+                    if (isFinite(nextAt)) {
+                        ev.push({ pid: 'IDLE', start: time, duration: nextAt - time, explain: `CPU idle until next arrival at ${nextAt}.` });
+                        time = nextAt;
+                        procs.forEach((p, i) => {
+                            if (p.at <= time && !arrived[i]) {
+                                queue.push(i);
+                                arrived[i] = true;
+                                lastReadyTime[i] = p.at;
+                            }
+                        });
+                        continue;
+                    } else break;
+                }
+
+                const idx = queue.shift();
+                if (rem[idx] <= 0) continue;
+
+                // Calculate compensated quantum
+                const baseQuantum = procs[idx].qtm;
+                // Waiting time is current time minus the time it entered the queue
+                const waitingTime = time - lastReadyTime[idx];
+                const effectiveQuantum = baseQuantum + waitingTime;
+
+                const run = Math.min(effectiveQuantum, rem[idx]);
+
+                const explain = `WCRR: ${procs[idx].id} runs. Base QTM=${baseQuantum}. Waiting Time=${waitingTime} (time ${time} - last ready ${lastReadyTime[idx]}). Effective QTM=${effectiveQuantum}. Runs for ${run}.`;
+
+                ev.push({
+                    pid: procs[idx].id,
+                    pidx: idx,
+                    start: time,
+                    duration: run,
+                    explain: explain
+                });
+
+                time += run;
+                rem[idx] -= run;
+
+                // Add newly arrived processes into queue and update their last ready time
+                procs.forEach((p, i) => {
+                    if (!arrived[i] && p.at <= time) {
+                        queue.push(i);
+                        arrived[i] = true;
+                        lastReadyTime[i] = p.at;
+                    }
+                });
+
+                if (rem[idx] > 0) {
+                    // Process is preempted
+                    queue.push(idx);
+                    lastReadyTime[idx] = time; // Set its new ready time
+                } else {
+                    // Process completed
+                    completed[idx] = true;
+                    doneCount++;
+                }
+            }
+            return ev;
+        }
+
+
+        // build events wrapper
+        function buildEvents(algo, procs, quantum) {
+            if (algo === 'fcfs') return generateEventsFCFS(procs);
+            if (algo === 'sjf') return generateEventsSJF(procs);
+            if (algo === 'priority') return generateEventsPriority(procs);
+            if (algo === 'rr') return generateEventsRR(procs, quantum);
+            if (algo === 'wcrr') return generateEventsWCRR(procs); // NEW
+            return [];
+        }
+
+        // prepare & run (build events and show initial state)
+        function prepareAndRun() {
+            processes = collectProcesses();
+            if (processes.length === 0) { alert('No processes defined'); return }
+            // assign colors by process id order
+            processes.forEach((p, i) => p.color = COLORS[i % COLORS.length]);
+            const algo = document.getElementById('algorithm').value;
+            const quantum = parseInt(document.getElementById('quantum').value) || 1;
+            events = buildEvents(algo, processes, quantum);
+
+            // compute final CT/TAT/WT using events
+            computeFinalStats();
+
+            stepIndex = -1; renderLegend(); renderTotals(); renderStepsList(); updateStepUI(); showStep(-1);
+        }
+
+        function computeFinalStats() {
+            // initialize
+            processes.forEach(p => { p.CT = null; p.TAT = null; p.WT = null; p.executed = 0; });
+            for (const e of events) {
+                if (e.pid === 'IDLE') continue;
+                const p = processes.find(x => x.id === e.pid);
+                if (!p) continue;
+                p.executed += e.duration;
+                p.CT = (e.start + e.duration); // last observed finish will override until final
+            }
+            processes.forEach(p => {
+                if (p.CT != null) { p.TAT = p.CT - p.at; p.WT = p.TAT - p.bt; }
+            });
+        }
+
+        // --- Rendering ---
+        function renderLegend() {
+            const el = document.getElementById('legend'); el.innerHTML = '';
+            processes.forEach(p => {
+                const div = document.createElement('div'); div.className = 'legend-item';
+                div.innerHTML = `<div class='color-swatch' style='background:${p.color}'></div><div class='small'>${p.id}</div>`;
+                el.appendChild(div);
+            });
+            // idle
+            const idle = document.createElement('div'); idle.className = 'legend-item'; idle.innerHTML = `<div class='color-swatch' style='background:#9ca3af'></div><div class='small'>IDLE</div>`;
+            el.appendChild(idle);
+        }
+
+        function renderTotals() {
+            const final = document.getElementById('resultTableFinal');
+            if (processes.length === 0) { final.innerHTML = ''; return; }
+            // UPDATED: Added QTM column to final table
+            let html = `<table><thead><tr><th>Process</th><th>AT</th><th>BT</th><th>QTM</th><th>CT</th><th>TAT</th><th>WT</th></tr></thead><tbody>`;
+            let sumWT = 0, sumTAT = 0, count = 0;
+            processes.forEach(p => {
+                const ct = p.CT != null ? p.CT : '-';
+                const tat = p.TAT != null ? p.TAT : '-';
+                const wt = p.WT != null ? p.WT : '-';
+                // Use p.qtm for WCRR, and the global quantum is ignored here, but we show the per-process qtm.
+                html += `<tr><td>${p.id}</td><td>${p.at}</td><td>${p.bt}</td><td>${p.qtm}</td><td>${ct}</td><td>${tat}</td><td>${wt}</td></tr>`;
+                if (typeof wt === 'number') { sumWT += wt; sumTAT += tat; count++; }
+            });
+            html += `</tbody></table>`;
+            if (count > 0) { html += `<div class='small' style='margin-top:8px'>Average WT = ${(sumWT / count).toFixed(2)} | Average TAT = ${(sumTAT / count).toFixed(2)}</div>` }
+            final.innerHTML = html;
+        }
+
+        function renderStepsList() {
+            const el = document.getElementById('stepsArea'); el.innerHTML = '';
+            events.forEach((e, i) => {
+                const d = document.createElement('div'); d.className = 'step'; d.id = 'step-' + i;
+                d.innerHTML = `<b>Step ${i + 1}:</b> <span class='small'>${e.pid === 'IDLE' ? 'IDLE' : e.pid} — start ${e.start}, dur ${e.duration}</span><div style='margin-top:6px' id='explain-${i}'>${escapeHtml(e.explain)}</div>`;
+                el.appendChild(d);
+            });
+        }
+
+        function updateStepUI() {
+            document.getElementById('currentStepLabel').innerText = `${Math.max(0, stepIndex + 1)} / ${events.length}`;
+        }
+
+        function showStep(i) {
+            // clamp
+            if (i < -1) i = -1; if (i > events.length - 1) i = events.length - 1;
+            stepIndex = i; updateStepUI();
+            // draw gantt up to i (highlight executed events)
+            const gc = document.getElementById('ganttChart'); const mr = document.getElementById('markerRow');
+            gc.innerHTML = ''; mr.innerHTML = ''; document.getElementById('endMarker').innerText = '';
+            // compute total span (sum of durations)
+            let total = events.reduce((s, e) => s + e.duration, 0);
+            if (total === 0) total = 1;
+
+            // build blocks
+            events.forEach((e, idx) => {
+                const span = document.createElement('div');
+                const flex = e.duration; span.style.flex = flex;
+                span.className = 'block';
+                if (e.pid === 'IDLE') { span.classList.add('idle'); span.style.background = '#9ca3af'; span.style.color = '#082032' }
+                else span.style.background = processes.find(p => p.id === e.pid)?.color || '#333';
+
+                // show faded for future steps
+                if (idx > i) span.style.opacity = 0.32;
+                span.innerText = `${e.pid} (${e.duration})`;
+                gc.appendChild(span);
+
+                // marker for start times (use same flex so alignment matches)
+                const marker = document.createElement('div'); marker.className = 'marker'; marker.style.flex = flex; marker.innerText = e.start;
+                mr.appendChild(marker);
+            });
+            // final end marker (right after last block)
+            const endTime = events.length ? (events[events.length - 1].start + events[events.length - 1].duration) : 0;
+            document.getElementById('endMarker').innerText = `End time: ${endTime}`;
+
+            // show step detail explanation
+            const detail = document.getElementById('stepDetail');
+            if (stepIndex >= 0 && stepIndex < events.length) {
+                detail.innerHTML = `<div><b>Step ${stepIndex + 1}:</b> ${escapeHtml(events[stepIndex].explain)}</div>`;
+            } else {
+                detail.innerHTML = `<div class='small'>Ready. Click Play or Next to start stepping through the schedule.</div>`;
+            }
+
+            // show live processes table (based on executed events up to stepIndex)
+            renderLiveProcessTable(stepIndex);
+
+            // highlight current step in steps list
+            document.querySelectorAll('#stepsArea .step').forEach((el, idx) => { el.style.border = idx === stepIndex ? '2px solid #c7d2fe' : '1px dashed #e5e7eb'; el.style.background = idx === stepIndex ? '#fbf8ff' : '#fbfbff'; });
+        }
+
+        function renderLiveProcessTable(uptoIndex) {
+            const el = document.getElementById('processTableLive');
+            if (processes.length === 0) { el.innerHTML = ''; return; }
+            // UPDATED: Added QTM column to live table
+            let html = `<table><thead><tr><th>Process</th><th>AT</th><th>BT</th><th>QTM</th><th>Executed</th><th>Remaining</th><th>CT(if finished)</th></tr></thead><tbody>`;
+            processes.forEach(p => {
+                let executed = 0; let ct = null;
+                for (let j = 0; j <= uptoIndex; j++) { if (events[j] && events[j].pid === p.id) { executed += events[j].duration; ct = events[j].start + events[j].duration; } }
+                const rem = p.bt - executed;
+                html += `<tr><td>${p.id}</td><td>${p.at}</td><td>${p.bt}</td><td>${p.qtm}</td><td>${executed}</td><td>${rem > 0 ? rem : 0}</td><td>${ct != null ? ct : '-'}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            el.innerHTML = html;
+        }
+
+        // steps control
+        function nextStep() { if (stepIndex < events.length - 1) showStep(stepIndex + 1); else showStep(events.length - 1); }
+        function prevStep() { if (stepIndex > -1) showStep(stepIndex - 1); else showStep(-1); }
+        function jumpToEnd() { showStep(events.length - 1); }
+        function resetAll() { events = []; processes = []; stepIndex = -1; document.getElementById('ganttChart').innerHTML = ''; document.getElementById('markerRow').innerHTML = ''; document.getElementById('stepsArea').innerHTML = ''; document.getElementById('resultTableFinal').innerHTML = ''; document.getElementById('processTableLive').innerHTML = ''; document.getElementById('stepDetail').innerHTML = ''; document.getElementById('legend').innerHTML = ''; }
+
+        function togglePlay() { if (playTimer) { clearInterval(playTimer); playTimer = null; document.getElementById('playBtn').innerText = '▶ Play'; } else { document.getElementById('playBtn').innerText = '⏸ Pause'; playTimer = setInterval(() => { if (stepIndex < events.length - 1) nextStep(); else { clearInterval(playTimer); playTimer = null; document.getElementById('playBtn').innerText = '▶ Play'; } }, 800); } }
+
+        function showAllCalculations() {
+            // scroll to final results and expand explanation
+            document.getElementById('resultTableFinal').scrollIntoView({ behavior: 'smooth' });
+            // also display calculation details under final table
+            let calcDiv = document.getElementById('calcDetail'); if (!calcDiv) { calcDiv = document.createElement('div'); calcDiv.id = 'calcDetail'; calcDiv.style.marginTop = '12px'; document.getElementById('resultTableFinal').appendChild(calcDiv); }
+            // build formulas
+            let html = '<div class="small"><b>Detailed calculations</b><ol>';
+            processes.forEach(p => {
+                if (p.CT != null) {
+                    html += `<li>${p.id}: CT=${p.CT}. TAT = CT - AT = ${p.CT} - ${p.at} = ${p.TAT}. WT = TAT - BT = ${p.TAT} - ${p.bt} = ${p.WT}.</li>`;
+                } else {
+                    html += `<li>${p.id}: Not finished in generated schedule.</li>`;
+                }
+            });
+            html += '</ol></div>';
+            calcDiv.innerHTML = html;
+        }
+
+        function escapeHtml(str) { return (str + '').replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; }); }
+
+        generateTable();
+
+
+    </script>
+</body>
+
+</html>
